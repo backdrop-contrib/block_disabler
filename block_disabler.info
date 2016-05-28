@@ -1,0 +1,5 @@
+name = Block Disabler
+description = Adds an option to hide a block without removing from Layout UI
+stylesheets[all][] = block_disabler.css
+backdrop = 1.x
+type = module

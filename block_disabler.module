@@ -1,0 +1,107 @@
+<?php
+/**
+ * @file
+ * Adds a Datetime Visibility Condition to Backdrop.
+ */
+
+/**
+ * Implements hook_autoload_info().
+ */
+function block_disabler_autoload_info() {
+  return array(
+    'BlockDisabler' => 'block_disabler.inc',
+  );
+}
+
+function block_disabler_block_view_alter(&$data, $block, $settings = array(), $contexts = array()) {
+  $layout = layout_get_layout_by_path();
+  foreach ($layout->content as $block_instance) {
+    if ($block->delta == $block_instance->delta && !empty($block_instance->settings['hidden'])) {
+      unset($data['subject']);
+      unset($data['content']);
+    }
+  }
+}
+
+function block_disabler_form_layout_content_form_alter(&$form, &$form_state, $form_id) {
+  $layout = $form_state['build_info']['args'][0];
+  $renderer = layout_create_renderer('block_disabler', $layout);
+  $form_state['renderer'] = $renderer;
+  $form['content']['display'] = array(
+    '#markup' => $renderer->render(),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function block_disabler_menu() {
+  $items = array();
+
+  $items['admin/structure/layouts/manage/%layout_tempstore/hide-block/%/%layout_tempstore_block'] = array(
+    'title' => 'Remove block',
+    'load arguments' => array(4),
+    'page callback' => 'block_disabler_block_hide_page',
+    'page arguments' => array(4, 7, 6),
+    'access arguments' => array('administer layouts'),
+  );
+
+
+  return $items;
+}
+
+/**
+ * Menu callback; Hide a block from display.
+ */
+function block_disabler_block_hide_page(Layout $layout, Block $block, $renderer_name) {
+  if (backdrop_get_token('layout-' . $layout->name) !== $_GET['token']) {
+    return MENU_ACCESS_DENIED;
+  }
+
+  $uuid = $block->uuid;
+  $hidden = empty($block->settings['hidden']) ? TRUE : FALSE;
+  $layout->content[$uuid]->settings['hidden'] = $hidden;
+  layout_set_layout_tempstore($layout);
+
+  $renderer = layout_create_renderer('block_disabler', $layout);
+  $replace_block = $renderer->renderBlock($block);
+
+  if (backdrop_is_ajax()) {
+    $commands[] = ajax_command_replace('#layout-editor-block-' . $block->uuid, $replace_block);
+    return array(
+      '#type' => 'ajax',
+      '#commands' => $commands,
+    );
+  }
+  else {
+    backdrop_set_message(t('Block "@title" removed.', array('@title' => $block->getAdminTitle())));
+    backdrop_goto('admin/structure/layouts/manage/' . $layout->name);
+  }
+
+}
+
+/**
+ * Returns information about Layout renderers.
+ *
+ * Layout renderers are classes which are responsible for processing a $layout
+ * object and rendering it as HTML. By default, Layout module provides two
+ * renderers, one for the front-end display and one for the administration of
+ * a layout. Alternative renderers could be provided to provide data in
+ * different formats, provide alternative UIs, or return specific blocks rather
+ * than the entire layout.
+ *
+ * @return array
+ *   Each item in the returned array of info should have the following keys:
+ *   - class: The name of a class that provides the renderer. Classes usually
+ *     extend the LayoutStandard class.
+ *
+ * @see hook_autoload_info()
+ * @see layout_layout_renderer_info()
+ */
+function block_disabler_layout_renderer_info() {
+  $info['block_disabler'] = array(
+    'class' => 'BlockDisabler',
+  );
+
+  return $info;
+}
