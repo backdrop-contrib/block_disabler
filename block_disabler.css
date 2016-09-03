@@ -1,3 +1,6 @@
-.layout-editor-block-hidden {
+.layout-editor-block-hidden .layout-editor-block-content {
+  opacity: 0.3;
+}
+.layout-editor-block-hidden .layout-editor-block-title .text {
   opacity: 0.3;
 }
