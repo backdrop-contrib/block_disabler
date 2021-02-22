@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Adds a Datetime Visibility Condition to Backdrop.
+ * Adds a 'disable' option to blocks.
  */
 
 /**
@@ -17,7 +17,7 @@ function block_disabler_block_view_alter(&$data, $block, $settings = array(), $c
   $layout = layout_get_layout_by_path();
   foreach ($layout->content as $block_instance) {
     if ($block->delta == $block_instance->delta && !empty($block_instance->settings['hidden'])) {
-      unset($data['subject']);
+      unset($data['title']);
       unset($data['content']);
     }
   }
